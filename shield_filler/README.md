@@ -9,4 +9,4 @@ Each input line is used to fill one of shield templates in a best possible way t
 
 ## Usage
 
-python3 shield_filler.py
+./shield_filler.py names_example.txt templates/shield.bmp --height-offset=80
