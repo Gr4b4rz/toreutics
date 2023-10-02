@@ -96,7 +96,7 @@ def remove_ticks(table_data: list[list]):
 
 def main_window(dpd_creds: Credentials):
     """
-    Run main PySimpleGUI window. It handles events in white(True) loop.
+    Run main PySimpleGUI window. It handles events in while(True) loop.
     """
     transactions = get_active_transactions()
     table_data = [[BLANK_BOX, trans.name, trans.value, trans.client_symbol, trans.client_name, trans.email,
@@ -117,15 +117,25 @@ def main_window(dpd_creds: Credentials):
     # ten, który ustawiamy, bo inaczej zrobimy cofkę.
     while True:
         event, values = window.read()
+        # Exit
         if event in (sg.WIN_CLOSED, 'Exit'):
             break
+        # Clicking on checkbox
         elif event[0] == "-TRANS-" and event[2][0] not in (None, -1) and event[2][1] == 0:
             window["-INFO2-"].update(value="")
             window["-PDF-"].update(data=b'')
             row: int = event[2][0]
+            # update weight and secondary name of the last selected row
+            # TODO: validate lengths
+            if values["-WEIGHT-"]:
+                details[last_selected_row].weight = values["-WEIGHT-"]
+            if values["-RECEIVER NAME-"]:
+                details[last_selected_row].receiver_second_name = values["-RECEIVER NAME-"]
             last_selected_row = row
             window['-COD-'].update(value=details[row].cod)
             window['-NEXTDAY-'].update(value=details[row].next_day)
+            window["-WEIGHT-"].update(value=details[row].weight)
+            window['-RECEIVER NAME-'].update(value=details[row].receiver_second_name)
             if table_data[row][0] == CHECKED_BOX:  # Going from Checked to Unchecked
                 selected.remove(row)
                 table_data[row][0] = BLANK_BOX
@@ -142,6 +152,7 @@ def main_window(dpd_creds: Credentials):
             window['-TRANS-'].update(values=table_data[:][:], select_rows=[last_selected_row])
             window["-INFO1-"].update(
                 value=f"Wybrano transakcje o numerach: {', '.join(map(str, sorted(selected)))}")
+        # Clicking on row but not on checkbox
         elif event[0] == "-TRANS-" and event[2][0] not in (None, -1):
             row: int = event[2][0]
 
