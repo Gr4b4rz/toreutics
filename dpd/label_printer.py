@@ -35,6 +35,8 @@ def create_layout(table_data: list, table_headings: list):
                                        enable_events=True)]]),
                  sg.Column([[sg.Button("Odśwież tabelę", enable_events=True, key="-REFRESH-",
                                        font='_ 13')]]),
+                 sg.Column([[sg.Button("Odznacz wszystkie", enable_events=True, key="-UNCHECK-",
+                                       font='_ 13')]]),
                  ],
                 [sg.Text(size=(100, 3), key="-INFO1-", font='_ 13')],
                 [sg.Text(size=(100, 1), key="-INFO2-", font='_ 15', text_color="red")],
@@ -48,11 +50,6 @@ def create_layout(table_data: list, table_headings: list):
     ]
 
     return layout
-
-
-def remove_ticks(table_data: list[list]):
-    for row in table_data:
-        row[0] = BLANK_BOX
 
 
 def dpd_login():
@@ -90,6 +87,11 @@ def dpd_login():
             return credentials
         elif event == "-CANCEL-":
             exit()
+
+
+def remove_ticks(table_data: list[list]):
+    for row in table_data:
+        row[0] = BLANK_BOX
 
 
 def main_window(dpd_creds: Credentials):
@@ -179,7 +181,6 @@ def main_window(dpd_creds: Credentials):
                                      f"Etykiety zapisano w pliku: {filepath}")
             window["-PDF-"].update(data=data)
             selected = set()
-            remove_ticks(table_data)
             window['-TRANS-'].update(values=table_data[:][:], select_rows=[last_selected_row])
             sg.FolderBrowse(initial_folder=filepath)
         elif event == "-OPEN FOLDER-":
@@ -200,6 +201,10 @@ def main_window(dpd_creds: Credentials):
             window['-INFO2-'].update(value="")
             window.read()
             window.refresh()
+        elif event == "-UNCHECK-":
+            remove_ticks(table_data)
+            window['-TRANS-'].update(values=table_data[:][:], select_rows=[last_selected_row])
+            window['-INFO1-'].update(value="")
 
     window.close()
 
