@@ -38,9 +38,9 @@ def create_layout(table_data: list, table_headings: list):
                  sg.Column([[sg.Button("Odznacz wszystkie", enable_events=True, key="-UNCHECK-",
                                        font='_ 13')]]),
                  ],
-                [sg.Text(size=(100, 3), key="-INFO1-", font='_ 13')],
                 [sg.Text(size=(100, 1), key="-INFO2-", font='_ 15', text_color="red")],
-            ], size=(1000, 300), vertical_alignment="top"),
+                [sg.Text(size=(100, 9), key="-INFO1-", font='_ 14')],
+            ], size=(1000, 450), vertical_alignment="top"),
             sg.VSeperator(pad=(0, 0)),
             sg.Column([
                 [sg.Image(data=b'', key="-PDF-")]
@@ -150,8 +150,14 @@ def main_window(dpd_creds: Credentials):
 
             # Update the table and the selected rows
             window['-TRANS-'].update(values=table_data[:][:], select_rows=[last_selected_row])
-            window["-INFO1-"].update(
-                value=f"Wybrano transakcje o numerach: {', '.join(map(str, sorted(selected)))}")
+            selected_desc = [
+                str(i) + ": " + transactions[i].client_symbol for i in sorted(selected)]
+            if selected_desc:
+                window["-INFO1-"].update(
+                    value=f"Wybrane transakcje:\n{chr(10).join(selected_desc)}")
+            else:
+                window["-INFO1-"].update(value="")
+
         # Clicking on row but not on checkbox
         elif event[0] == "-TRANS-" and event[2][0] not in (None, -1):
             row: int = event[2][0]
