@@ -4,7 +4,7 @@ import subprocess
 from collections import defaultdict
 import PySimpleGUI as sg
 from src.dpd import generate_labels, Shipment, ShipmentDetails, Credentials
-from src.mssql import get_active_transactions
+from src.mssql import get_active_transactions, refresh_transaction
 
 BLANK_BOX = '☐'
 CHECKED_BOX = '🗹'
@@ -26,6 +26,9 @@ def create_layout(table_data: list, table_headings: list):
                  sg.VSeperator(pad=(0, 0)),
                  sg.Column([[sg.Text("Waga [kg]:", font='_ 13')]]),
                  sg.Column([[sg.InputText("1.0", key="-WEIGHT-", font='_ 13', size=(5, 1))]]),
+                 sg.VSeperator(pad=(0, 0)),
+                 sg.Column([[sg.Button("Odśwież wiersz", enable_events=True, key="-REFRESH-ONE-",
+                                       font='_ 13')]]),
                  ],
                 [sg.Column([[sg.Text("Imię i nazwisko odbiorcy:", font='_ 13')]]),
                  sg.Column([[sg.InputText(key="-RECEIVER NAME-", font='_ 13')]])],
@@ -99,8 +102,9 @@ def main_window(dpd_creds: Credentials):
     Run main PySimpleGUI window. It handles events in while(True) loop.
     """
     transactions = get_active_transactions()
-    table_data = [[BLANK_BOX, trans.name, trans.value, trans.client_symbol, trans.client_name, trans.email,
-                   trans.tel, trans.address, trans.city, trans.zip_code] for trans in transactions]
+    table_data = [[BLANK_BOX, trans.name, trans.value, trans.client_symbol, trans.client_name,
+                   trans.email, trans.tel, trans.address, trans.city, trans.zip_code]
+                  for trans in transactions]
     table_headings = [" ✔️ ", "Nazwa", "Cena brutto", "Symbol", "Klient",
                       "Email", "Tel", "Ulica", "Miasto", "Kod pocztowy"]
     selected = {i for i, row in enumerate(table_data[1:][:]) if row[0] == CHECKED_BOX}
@@ -209,7 +213,8 @@ def main_window(dpd_creds: Credentials):
                 subprocess.Popen(['xdg-open', os.path.abspath("labels")])
         elif event == "-REFRESH-":
             transactions = get_active_transactions()
-            table_data = [[BLANK_BOX, trans.name, trans.value, trans.client_name, trans.email, trans.tel, trans.address,
+            table_data = [[BLANK_BOX, trans.name, trans.value, trans.client_symbol,
+                           trans.client_name, trans.email, trans.tel, trans.address,
                           trans.city, trans.zip_code] for trans in transactions]
             selected = {i for i, row in enumerate(table_data[1:][:]) if row[0] == CHECKED_BOX}
             details = defaultdict(ShipmentDetails)
@@ -222,6 +227,18 @@ def main_window(dpd_creds: Credentials):
             remove_ticks(table_data)
             window['-TRANS-'].update(values=table_data[:][:], select_rows=[last_selected_row])
             window['-INFO1-'].update(value="")
+        elif event == "-REFRESH-ONE-":
+            if last_selected_row is None:
+                continue
+            trans = transactions[last_selected_row]
+            new_trans = refresh_transaction(trans)
+            transactions[last_selected_row] = new_trans
+            table_data[last_selected_row] = [
+                table_data[last_selected_row][0], new_trans.name, new_trans.value,
+                trans.client_symbol, new_trans.client_name, new_trans.email,
+                new_trans.tel, new_trans.address, new_trans.city, new_trans.zip_code
+            ]
+            window['-TRANS-'].update(values=table_data[:][:], select_rows=[last_selected_row])
 
     window.close()
 
