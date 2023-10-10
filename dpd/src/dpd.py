@@ -173,10 +173,7 @@ class Shipment:
         Create Shipment instance from a transaction and shipment details.
         """
         # TODO: validate data, and raise if an exception occurs
-        if len(trans.client_name) > 35:
-            company_name = trans.client_symbol[:35]
-        else:
-            company_name = trans.client_name
+        company_name = trans.client_name[:35]
         receiver = Address(companyName=company_name,
                            zipCode=trans.zip_code,
                            city=trans.city,
