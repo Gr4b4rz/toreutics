@@ -131,9 +131,9 @@ def main_window(dpd_creds: Credentials):
             row: int = event[2][0]
             # update weight and secondary name of the last selected row
             # TODO: validate lengths
-            if values["-WEIGHT-"]:
+            if values["-WEIGHT-"] and last_selected_row is not None:
                 details[last_selected_row].weight = values["-WEIGHT-"]
-            if values["-RECEIVER NAME-"]:
+            if values["-RECEIVER NAME-"] and last_selected_row is not None:
                 details[last_selected_row].receiver_second_name = values["-RECEIVER NAME-"]
             last_selected_row = row
             window['-COD-'].update(value=details[row].cod)
@@ -168,9 +168,9 @@ def main_window(dpd_creds: Credentials):
 
             # update weight and secondary name of the last selected row
             # TODO: validate lengths
-            if values["-WEIGHT-"]:
+            if values["-WEIGHT-"] and last_selected_row is not None:
                 details[last_selected_row].weight = values["-WEIGHT-"]
-            if values["-RECEIVER NAME-"]:
+            if values["-RECEIVER NAME-"] and last_selected_row is not None:
                 details[last_selected_row].receiver_second_name = values["-RECEIVER NAME-"]
 
             window["-WEIGHT-"].update(value=details[row].weight)
@@ -201,7 +201,6 @@ def main_window(dpd_creds: Credentials):
                                      f"o {'numerach' if len(selected) > 1 else 'numerze'}: {', '.join(map(str, sorted(selected)))}\n"
                                      f"Etykiety zapisano w pliku: {filepath}")
             window["-PDF-"].update(data=data)
-            selected = set()
             window['-TRANS-'].update(values=table_data[:][:], select_rows=[last_selected_row])
             sg.FolderBrowse(initial_folder=filepath)
         elif event == "-OPEN FOLDER-":
