@@ -183,7 +183,7 @@ class Shipment:
                            name1=details.receiver_second_name)
         return Shipment(receiver=receiver,
                         sender=SENDER,
-                        weight=float(details.weight),
+                        weight=float(details.weight.replace(",", ".")),
                         parcel_content=trans.name,
                         product_code=details.product_code(),
                         price=trans.value)
