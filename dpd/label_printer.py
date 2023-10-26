@@ -97,6 +97,15 @@ def remove_ticks(table_data: list[list]):
         row[0] = BLANK_BOX
 
 
+def nextdays_error(details: dict[int, ShipmentDetails], selected: set[int]) -> bool:
+    """
+    DPD has an error in the next_day shipment API. More than one label in the PDF file
+    with at least one next_day shipment may cause an undefined behaviour.
+    """
+    return len(selected) > 1 and any(det for idx, det in details.items() if det.next_day and idx in
+                                     selected)
+
+
 def main_window(dpd_creds: Credentials):
     """
     Run main PySimpleGUI window. It handles events in while(True) loop.
@@ -186,6 +195,11 @@ def main_window(dpd_creds: Credentials):
             window["-INFO2-"].update(value="")
             if not selected:
                 window["-INFO2-"].update(value="Nie wybrano żadnej transakcji!")
+                continue
+
+            if nextdays_error(details=details, selected=selected):
+                window["-INFO2-"].update(value="W związku z błędem w API DPD etykieta 'next day' "
+                                         "musi zostać wygenerowana osobno!")
                 continue
 
             if values["-WEIGHT-"]:
