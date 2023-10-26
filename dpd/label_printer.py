@@ -70,7 +70,7 @@ def dpd_login():
         [sg.Submit('OK', key='-OK-'), sg.Cancel(key='-CANCEL-')],
     ]
 
-    window = sg.Window('Logowanie do DPD', layout,
+    window = sg.Window('Logowanie do DPD', layout, icon="dpd.png",
                        auto_size_text=False,
                        default_element_size=(12, 1),
                        text_justification='r',
@@ -112,7 +112,7 @@ def main_window(dpd_creds: Credentials):
     layout = create_layout(table_data, table_headings)
     last_selected_row = None
 
-    window = sg.Window('Listbox with Search', layout, resizable=True, finalize=True)
+    window = sg.Window('Listbox with Search', layout, icon="dpd.png", resizable=True, finalize=True)
 
     # TODO: There is sometimes name/surname in the phone number. It should be handled gracefully.
 
