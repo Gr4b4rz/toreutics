@@ -3,6 +3,7 @@ import argparse
 import itertools
 import shutil
 import os
+import re
 
 from PIL import Image, ImageDraw, ImageFont
 from src.line_lengths import line_limits, max_line_len_for_pos
@@ -27,6 +28,7 @@ def parse_args():
                         " means right.", default=0)
     parser.add_argument("--font-name", action="store", type=str, help="Font name. Preferably path "
                         "to the .ttf file.", default='fonts/Times_New_Roman_Bold_Italic.ttf')
+    parser.add_argument("--as-is", action="store_true", help="Fill exactly as in file")
 
     args = parser.parse_args()
     return args
@@ -54,6 +56,7 @@ def apply_name_heuristics(name_parts):
 # Single line village
 single_line_village = ["Leska", "Solina", "Cisna", "Sanoka", "Lesko"]
 first_in_line_words = {"i", "w", "Prezes", "Członek", "Proboszcz"}
+always_in_one_line = {"sp. z o.o.", "Sp. z o.o.", "sp.z o.o.", "sp. j.", "Sp. J."}
 
 
 def split_name(name: str, max_linex: int, max_line_len: int, template_name: str) -> list[str]:
@@ -62,19 +65,22 @@ def split_name(name: str, max_linex: int, max_line_len: int, template_name: str)
     name_parts = [name for name in name_parts if name not in {"–", "-"}]
     lines = []
     line = ""
+    # TODO: before only 2 parts per line were allowed
     for name in name_parts:
-        if (len(line) + len(name) + 1 <= max_line_len and (not line or name not in first_in_line_words) and
-                " " not in line):
+        if (len(line) + len(name) + 1 <= max_line_len and
+                (not line or name not in first_in_line_words)):
             if line:
                 line += " "
             line += name
         else:
-            lines.append(line)
+            # TODO: here or below sometimes empty string occurs
+            if line and line != " ":
+                lines.append(line)
             line = name
             if line in single_line_village:
                 lines.append(line)
                 line = ""
-    if line:
+    if line and line != " ":
         lines.append(line)
 
     def _split_too_long(line: str, max_len) -> list[str]:
@@ -90,6 +96,8 @@ def split_name(name: str, max_linex: int, max_line_len: int, template_name: str)
         return [line]
 
     def _split_too_short(line: str) -> list[str]:
+        if line in always_in_one_line:
+            return [line]
         if len(line.split()) == 2 and "i" in line.split():
             return [line]
         return line.split(maxsplit=1)
@@ -130,7 +138,7 @@ def draw_on_shield(shield, lines: list[str], spacing: int, coords: tuple,
 
 
 def fill_shield(name: str, output_path: str, no_border_output_path: str, coords: tuple,
-                shield_template, arguments, max_name_len: int, max_lines: int):
+                shield_template, arguments, max_name_len: int, max_lines: int, as_is=False):
     """
     Fill shield with given name in correct format
     """
@@ -139,26 +147,50 @@ def fill_shield(name: str, output_path: str, no_border_output_path: str, coords:
     # split too long ones
     font_size_reduction = 0
     spacing = 50
-    lines = split_name(name, max_lines, max_name_len, arguments.template)
+    if as_is:
+        lines = name.splitlines()
+    else:
+        lines = split_name(name, max_lines, max_name_len, arguments.template)
     cor_x, cor_y = coords
-    if len(lines) > max_lines + 1:
+    if len(lines) > max_lines + 2:
+        print("Warning: Far too many lines!:", lines)
+        font_size_reduction = 10
+        spacing = 15
+        coords = (cor_x, cor_y)
+    elif len(lines) > max_lines + 1:
         print("Warning: Too many lines!:", lines)
         font_size_reduction = 7
         spacing = 27
-        coords = (cor_x, cor_y - 20)
+        coords = (cor_x, cor_y)
     elif len(lines) > max_lines:
         print("Warning: long one!:", lines)
         font_size_reduction = 5
         spacing = 40
+        coords = (cor_x, cor_y - 20)
     elif len(lines) < 4:
         spacing = 60
 
-    if len(lines) in {4, 5, 6} and len(lines[-1]) > 7:
-        coords = (cor_x, cor_y - 30)
+    #  if len(lines) == 2:
+        #  # font_size_reduction = -5
+        #  coords = (cor_x, cor_y - 30)
+
+    #  if len(lines) == 3:
+        #  # font_size_reduction = -3
+        #  coords = (cor_x, cor_y - 30)
+
+    if len(lines) in {2, 3, 4, 5}:
+        coords = (cor_x, cor_y - 20)
+
+    if len(lines) in {6}:
+        print("max lines: ", lines)
+        coords = (cor_x, cor_y - 40)
 
     if any(len(line) > max_name_len for line in lines):
         print("Warning: wide one!:", lines)
         font_size_reduction = 5
+
+    if arguments.template == "szablony/nail_03.bmp":
+        coords = (cor_x, cor_y - 60)
     if font_size_reduction:
         font = ImageFont.truetype(
             arguments.font_name, size=arguments.font_size * 3 - font_size_reduction * 3)
@@ -183,17 +215,22 @@ def main():
     max_name_len, max_lines = line_limits(arguments.template)
 
     with open(arguments.input_file, "r", encoding="utf-8") as file:
-        names = file.read().splitlines()
+        if arguments.as_is:
+            data = file.read()
+            names = re.split(r"(?:\r?\n){2,}", data.strip())
+        else:
+            names = file.read().splitlines()
         names = [name.strip() for name in names if name]
 
     for idx, name in enumerate(names, start=1):
         output_path = tmp_output_dir + "/" + str(idx) + "_" + "_".join(name.split())
         no_border_output_path = no_border_tmp_dir + "/" + str(idx) + "_" + "_".join(name.split())
         fill_shield(name, output_path, no_border_output_path, center, shield_template,
-                    arguments, max_name_len, max_lines)
+                    arguments, max_name_len, max_lines, arguments.as_is)
 
     print(f"Filled {len(names)} shields and saved them in {arguments.output_file}.zip")
     shutil.make_archive(arguments.output_file, 'zip', no_border_tmp_dir)
+    shutil.make_archive(arguments.output_file + "_kontur", 'zip', tmp_output_dir)
     shutil.rmtree(no_border_tmp_dir)
 
 
