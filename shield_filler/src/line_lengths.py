@@ -43,23 +43,23 @@ POS_TO_LEN_MAP_3 = {
 }
 
 
-def line_limits(nail_type: str) -> tuple[int, int]:
+def line_limits(nail_type: int) -> tuple[int, int]:
     """
     Hardcoded max_line_len and max_lines for default font size. Different foreach nail type.
     """
-    if nail_type == "szablony/nail_01.bmp":
+    if nail_type == 1:
         return 14, 6  # maybe 15, 7 here
     # TODO: depends on font
-    if nail_type == "szablony/nail_02.bmp":
+    if nail_type == 2:
         return 14, 6
-    if nail_type == "szablony/nail_03.bmp":
+    if nail_type == 3:
         return 14, 6
 
     print("Unknown nail type, maybe shield? Using max_line_len=13")
     return 15, 6
 
 
-def max_line_len_for_pos(idx: int, lines_nb: int, nail_type: str):
+def max_line_len_for_pos(idx: int, lines_nb: int, nail_type: int):
     """
     Get max line len depending on line idx. Its different for each type of nail because of
     its various non-rectangular shapes.
@@ -113,11 +113,11 @@ def max_line_len_for_pos(idx: int, lines_nb: int, nail_type: str):
         elif idx == 5:
             pos = 11
 
-    if nail_type == "szablony/nail_01.bmp":
+    if nail_type == 1:
         return POS_TO_LEN_MAP_1[pos]
-    if nail_type == "szablony/nail_02.bmp":
+    if nail_type == 2:
         return POS_TO_LEN_MAP_2[pos]
-    if nail_type == "szablony/nail_03.bmp":
+    if nail_type == 3:
         return POS_TO_LEN_MAP_3[pos]
 
     print("Unknown nail type, maybe shield? Using max_line_lens from nail_02")
