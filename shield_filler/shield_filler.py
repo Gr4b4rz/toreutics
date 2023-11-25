@@ -90,7 +90,7 @@ def main_window(nails: list[Nail], global_opts: GlobalOptions):
             nails[row].formatted_text = values["-FORMATTED-TEXT-"].splitlines()
             nails[row].font_size = int(values["-FONT-SIZE-"])
             nails[row].spacing = int(values["-SPACING-"])
-            (x, y) = nails[row].center
+            (x, y) = global_opts.center
             nails[row].center = (x, y + float(values["-TRANSLATION-"]))
             fill_shield(nails[row], global_opts=global_opts)
             window["-IMAGE-"].update(data=get_img_data(nails[row].bmp_filename(
