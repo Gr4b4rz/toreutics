@@ -15,7 +15,7 @@ def get_img_data(filename: str, maxsize=(1200, 850), first=False):
     """
     img = Image.open(filename)
     img.thumbnail(maxsize)
-    if first:                     # tkinter is inactive the first time
+    if first:  # tkinter is inactive the first time
         bio = io.BytesIO()
         img.save(bio, format="PNG")
         del img
@@ -30,26 +30,39 @@ def create_layout(names: list, global_opts: GlobalOptions):
             [sg.Text(global_opts.list_filename, font='_ 13')],
             [sg.Listbox(values=names, change_submits=True, size=(
                 63, 20), key='-LISTBOX-', font='_ 13')],
-            [sg.Column([[sg.Text("Ustawienia globalne:", font='_ 13')]]),
-             sg.Column([[sg.Text("Rozmiar czcionki", font='_ 13')]]),
-                sg.Column([[sg.InputText(global_opts.font_size, key="-DEFAULT-FONT-SIZE-",
+            [
+                sg.Column([[sg.Text("Ustawienia globalne:", font='_ 13')]]),
+                sg.Column([[sg.VSeperator(pad=(0, 0))]]),
+                sg.Column([[sg.Button("Odśwież wszystkie", key="-REFRESH-ALL-", font='_ 13')]]),
+            ],
+            [
+                sg.Column([[sg.Text("Rozmiar czcionki", font='_ 13')]]),
+                sg.Column([[sg.InputText(str(global_opts.font_size), key="-DEFAULT-FONT-SIZE-",
                                          size=(5, 1), font='_ 13')]]),
-             sg.Column([[sg.Button("Odśwież wszystkie", key="-REFRESH-ALL-", font='_ 13')]]),
-             ],
+                sg.Column([[sg.VSeperator(pad=(0, 0))]]),
+                sg.Column([[sg.Text("Interlinia", font='_ 13')]]),
+                sg.Column([[sg.InputText(str(global_opts.spacing), key="-GLOBAL-SPACING-",
+                                         size=(5, 1), font='_ 13')]]),
+                sg.Column([[sg.VSeperator(pad=(0, 0))]]),
+                sg.Column([[sg.Text("Translacja (oś Y)", font='_ 13')]]),
+                sg.Column([[sg.InputText("0", key="-GLOBAL-TRANSLATION-",
+                                         size=(5, 1), font='_ 13')]]),
+            ],
             [sg.Text("Rozbity tekst:", font='_ 13')],
             [sg.Multiline(key="-FORMATTED-TEXT-", size=(63, 10), expand_y=True, font='_ 13')],
             [sg.Column([[sg.Text("Rozmiar czcionki", font='_ 13')]]),
-             sg.Column([[sg.InputText(global_opts.font_size, key="-FONT-SIZE-",
+             sg.Column([[sg.InputText(str(global_opts.font_size), key="-FONT-SIZE-",
                                       size=(5, 1), font='_ 13')]]),
              sg.Column([[sg.VSeperator(pad=(0, 0))]]),
              sg.Column([[sg.Text("Interlinia", font='_ 13')]]),
              sg.Column(
-                 [[sg.InputText(global_opts.spacing, key="-SPACING-", size=(5, 1), font='_ 13')]]),
+                 [[sg.InputText(str(global_opts.spacing),
+                                key="-SPACING-", size=(5, 1), font='_ 13')]]),
              sg.Column([[sg.VSeperator(pad=(0, 0))]]),
              sg.Column([[sg.Text("Translacja (oś Y)", font='_ 13')]]),
-             sg.Column([[sg.InputText(0, key="-TRANSLATION-", size=(5, 1), font='_ 13')]]),
+             sg.Column([[sg.InputText("0", key="-TRANSLATION-", size=(5, 1), font='_ 13')]]),
              ],
-            [sg.Column([[sg.Button("Odśwież", key="-REFRESH-", font='_ 13')]]),
+            [sg.Column([[sg.Button("Zapisz i Odśwież", key="-REFRESH-", font='_ 13')]]),
              sg.Column([[sg.VSeperator(pad=(0, 0))]]),
              sg.Column([[sg.Button("Zapisz i zakończ", key="-SAVE-CLOSE-", font='_ 13')]]),
              ]
@@ -89,15 +102,17 @@ def main_window(nails: list[Nail], global_opts: GlobalOptions):
             row: int = window["-LISTBOX-"].get_indexes()[0]
             nails[row].formatted_text = values["-FORMATTED-TEXT-"].splitlines()
             nails[row].font_size = int(values["-FONT-SIZE-"])
-            nails[row].spacing = int(values["-SPACING-"])
-            (x, y) = global_opts.center
-            nails[row].center = (x, y + float(values["-TRANSLATION-"]))
+            if int(values["-SPACING-"]) != global_opts.spacing:
+                nails[row].spacing = int(values["-SPACING-"])
+            nails[row].translation = float(values["-TRANSLATION-"])
             fill_shield(nails[row], global_opts=global_opts)
             window["-IMAGE-"].update(data=get_img_data(nails[row].bmp_filename(
                 global_opts.tmp_output_dir)))
         elif event == '-REFRESH-ALL-':
             row: int = window["-LISTBOX-"].get_indexes()[0]
             global_opts.font_size = int(values["-DEFAULT-FONT-SIZE-"])
+            global_opts.translation = float(values["-GLOBAL-TRANSLATION-"])
+            global_opts.spacing = int(values["-GLOBAL-SPACING-"])
             format_nails(nails, global_opts, True)
             window["-IMAGE-"].update(data=get_img_data(nails[row].bmp_filename(
                 global_opts.tmp_output_dir)))
@@ -184,8 +199,7 @@ def main():
         formatted_text=[],
         output_path=templ_filename,
         font_size=global_options.font_size,
-        spacing=global_options.spacing,
-        center=global_options.center
+        translation=global_options.translation,
     ) for idx, name in enumerate(names, start=1) if name]
 
     format_nails(nails, global_options)

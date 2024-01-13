@@ -1,4 +1,5 @@
 import itertools
+from typing import Optional
 from dataclasses import dataclass
 from PIL import Image, ImageDraw, ImageFont
 from src.line_lengths import line_limits, max_line_len_for_pos
@@ -11,8 +12,8 @@ class Nail:
     formatted_text: list[str]
     output_path: str
     font_size: int
-    spacing: int
-    center: tuple
+    translation: float
+    spacing: Optional[int] = None
 
     def bmp_filename(self, directory: str):
         return directory + "/" + str(self.idx) + "_" + "_".join(self.text.split()) + ".bmp"
@@ -33,6 +34,7 @@ class GlobalOptions:
         self.shield_template = self.shield_template.resize(
             (self.shield_template.size[0] * 3, self.shield_template.size[1] * 3))
         self.center = (self.shield_template.size[0] / 2, self.shield_template.size[1] / 2)
+        self.translation = 0.0
         self.nail_type = self.get_nail_type(templ_file)
         self.max_chars, self.max_lines = line_limits(self.nail_type)
         self.font_size = self.get_font_size(self.nail_type)
@@ -67,55 +69,51 @@ def fill_shield(nail: Nail, global_opts: GlobalOptions):
     font = ImageFont.truetype(global_opts.font_name, size=nail.font_size * 3)
 
     font_size_reduction = 0
+    cor_x, cor_y = global_opts.center
+    spacing = nail.spacing or global_opts.spacing
     if not nail.formatted_text:
         nail.formatted_text = split_name(nail.text, global_opts.max_lines, global_opts.max_chars,
                                          global_opts.nail_type)
-        cor_x, cor_y = nail.center
         if len(nail.formatted_text) > global_opts.max_lines + 2:
             print("Warning: Far too many lines!:", nail.formatted_text)
             font_size_reduction = 10
-            nail.spacing = 15
+            spacing -= 45
+
         elif len(nail.formatted_text) > global_opts.max_lines + 1:
             print("Warning: Too many lines!:", nail.formatted_text)
             font_size_reduction = 7
-            nail.spacing = 27
+            spacing -= 30
+            cor_y -= 27
+
         elif len(nail.formatted_text) > global_opts.max_lines:
             print("Warning: long one!:", nail.formatted_text)
             font_size_reduction = 5
-            nail.spacing = 40
-            nail.center = (cor_x, cor_y - 20)
-        elif len(nail.formatted_text) < 4:
-            nail.spacing = 60
-
-        #  if len(nail.formatted_text) == 2:
-            #  # font_size_reduction = -5
-            #  coords = (cor_x, cor_y - 30)
-
-        #  if len(nail.formatted_text) == 3:
-            #  # font_size_reduction = -3
-            #  coords = (cor_x, cor_y - 30)
+            spacing -= 20
+            cor_y -= 20
 
         if len(nail.formatted_text) in {2, 3, 4, 5}:
-            nail.center = (cor_x, cor_y - 20)
+            cor_y -= 20
 
         if len(nail.formatted_text) in {6}:
             print("max lines: ", nail.formatted_text)
-            nail.center = (cor_x, cor_y - 40)
+            cor_y -= 40
 
         if any(len(line) > global_opts.max_chars for line in nail.formatted_text):
             print("Warning: wide one!:", nail.formatted_text)
             font_size_reduction = 5
 
         if global_opts.nail_type == 3:
-            nail.center = (cor_x, cor_y - 60)
+            cor_y -= 60
         if font_size_reduction:
             nail.font_size -= font_size_reduction
             font = ImageFont.truetype(global_opts.font_name, size=nail.font_size * 3)
 
-    draw_on_shield(global_opts.shield_template.copy(), nail.formatted_text, nail.spacing,
-                   nail.center, font, output_path, True)
-    draw_on_shield(global_opts.shield_template.copy(), nail.formatted_text, nail.spacing,
-                   nail.center, font, no_border_output_path, False)
+    cor_y -= nail.translation + global_opts.translation
+
+    draw_on_shield(global_opts.shield_template.copy(), nail.formatted_text, spacing,
+                   (cor_x, cor_y), font, output_path, True)
+    draw_on_shield(global_opts.shield_template.copy(), nail.formatted_text, spacing,
+                   (cor_x, cor_y), font, no_border_output_path, False)
 
 
 # Single line village
