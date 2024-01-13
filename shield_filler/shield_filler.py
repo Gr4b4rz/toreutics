@@ -78,26 +78,44 @@ def create_layout(names: list, global_opts: GlobalOptions):
     return layout
 
 
+def update_view(window: sg.Window, nails: list[Nail], global_opts: GlobalOptions):
+    """
+    Update view after clicking on a row, or after changing current row with an arrow button
+    """
+    row: int = window["-LISTBOX-"].get_indexes()[0]
+    window["-FORMATTED-TEXT-"].update(value="\n".join(nails[row].formatted_text))
+    window["-IMAGE-"].update(data=get_img_data(nails[row].bmp_filename(
+        global_opts.tmp_output_dir)))
+    window["-SPACING-"].update(value=nails[row].spacing or global_opts.spacing)
+    window["-FONT-SIZE-"].update(value=nails[row].font_size)
+    window["-TRANSLATION-"].update(value=nails[row].translation)
+
+
 def main_window(nails: list[Nail], global_opts: GlobalOptions):
     layout = create_layout([nail.text for nail in nails], global_opts)
     window = sg.Window('Shield filler', layout, return_keyboard_events=True,
                        location=(0, 0), use_default_focus=False, resizable=True,
                        finalize=True)
     window.Maximize()
+    window['-LISTBOX-'].update(set_to_index=0)
     while True:
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Exit'):
             shutil.rmtree(global_opts.no_border_tmp_dir)
             shutil.rmtree(global_opts.tmp_output_dir)
             sys.exit()
-        elif event == '-LISTBOX-':
+        elif event == "Down:116":
             row: int = window["-LISTBOX-"].get_indexes()[0]
-            window["-FORMATTED-TEXT-"].update(value="\n".join(nails[row].formatted_text))
-            window["-IMAGE-"].update(data=get_img_data(nails[row].bmp_filename(
-                global_opts.tmp_output_dir)))
-            window["-SPACING-"].update(value=nails[row].spacing)
-            window["-FONT-SIZE-"].update(value=nails[row].font_size)
-            window["-TRANSLATION-"].update(value=nails[row].center[1] - global_opts.center[1])
+            if row < len(nails) - 1:
+                window['-LISTBOX-'].update(set_to_index=row+1)
+            update_view(window, nails, global_opts)
+        elif event == "Up:111":
+            row: int = window["-LISTBOX-"].get_indexes()[0]
+            if row > 0:
+                window['-LISTBOX-'].update(set_to_index=row-1)
+            update_view(window, nails, global_opts)
+        elif event == '-LISTBOX-':
+            update_view(window, nails, global_opts)
         elif event == '-REFRESH-':
             row: int = window["-LISTBOX-"].get_indexes()[0]
             nails[row].formatted_text = values["-FORMATTED-TEXT-"].splitlines()
