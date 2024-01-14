@@ -3,9 +3,11 @@ import sys
 from pathlib import Path
 import PySimpleGUI as sg
 import os
+from dataclasses import asdict
 from PIL import Image, ImageTk
 import io
 import shutil
+import json
 from src.shield_filler import fill_shield, GlobalOptions, Nail
 
 
@@ -98,6 +100,7 @@ def main_window(nails: list[Nail], global_opts: GlobalOptions):
                        finalize=True)
     window.Maximize()
     window['-LISTBOX-'].update(set_to_index=0)
+    update_view(window, nails, global_opts)
     while True:
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Exit'):
@@ -136,13 +139,43 @@ def main_window(nails: list[Nail], global_opts: GlobalOptions):
                 global_opts.tmp_output_dir)))
         elif event == '-SAVE-CLOSE-':
             list_base_name = Path(global_opts.list_filename).stem
-            shutil.make_archive(list_base_name, 'zip', global_opts.no_border_tmp_dir)
-            shutil.make_archive(list_base_name + "_kontur", 'zip', global_opts.tmp_output_dir)
+            final_dir = os.path.join("projekty", list_base_name)
+            os.makedirs(final_dir, exist_ok=True)
+            save_current_state(final_dir, nails, global_opts)
+            shutil.make_archive(os.path.join(final_dir, list_base_name),
+                                'zip', global_opts.no_border_tmp_dir)
+            shutil.make_archive(os.path.join(final_dir, list_base_name + "_kontur"),
+                                'zip', global_opts.tmp_output_dir)
             shutil.rmtree(global_opts.no_border_tmp_dir)
             sys.exit()
 
         else:
             pass
+
+
+def read_cache(directory: str) -> tuple[list[dict], dict]:
+    """
+    Read settings cache from json files
+    """
+    with open(os.path.join(directory, "nails.json"), "r", encoding="UTF-8") as f:
+        nails_json = json.load(f)
+    with open(os.path.join(directory, "global_opts.json"), "r", encoding="UTF-8") as f:
+        global_opts_json = json.load(f)
+
+    return nails_json, global_opts_json
+
+
+def save_current_state(directory, nails: list[Nail], global_opts: GlobalOptions):
+    """
+    Save current state (each nail and global settings) in the .json files
+    """
+    nails_filename = os.path.join(directory, "nails.json")
+    global_opts_filename = os.path.join(directory, "global_opts.json")
+    with open(nails_filename, "w", encoding="UTF-8") as f:
+        nails_dict = [asdict(nail) for nail in nails]
+        json.dump(nails_dict, f)
+    with open(global_opts_filename, "w", encoding="UTF-8") as f:
+        json.dump(global_opts.get_cache(), f)
 
 
 def create_tmp_output_dir(dir_name: str):
@@ -152,7 +185,7 @@ def create_tmp_output_dir(dir_name: str):
     return dir_name
 
 
-def initial_window():
+def initial_window() -> tuple:
     """
     Open login window. Load remembered credentials from secrets.json file.
     """
@@ -161,12 +194,16 @@ def initial_window():
             sg.FileBrowse(key="-NAMES-FILE-", initial_folder=os.path.abspath("listy"))]],
         [[sg.Text("Szablon", size=7), sg.Input(),
             sg.FileBrowse(key="-TEMPLATE-FILE-", initial_folder=os.path.abspath("szablony"))]],
+        [[sg.Text("Projekt", size=7), sg.Input("Wybierz projekt, "
+                                               "jeśli chcesz kontynuować pracę"),
+            sg.FolderBrowse(key="-PROJECTS-DIR-", initial_folder=os.path.abspath("projekty"),
+                            tooltip="Wybierz folder, by kontynuować pracę")]],
         [sg.Submit('OK', key='-OK-'), sg.Cancel(key='-CANCEL-')],
     ]
 
     window = sg.Window('Wybór listy gwoździ i szablonu', layout,
                        return_keyboard_events=True,
-                       grab_anywhere=False)
+                       grab_anywhere=False, finalize=True)
 
     while True:
         event, values = window.read()
@@ -174,7 +211,7 @@ def initial_window():
             sys.exit()
         elif event == "-OK-":
             window.close()
-            return (values["-NAMES-FILE-"], values["-TEMPLATE-FILE-"])
+            return (values["-NAMES-FILE-"], values["-TEMPLATE-FILE-"], values["-PROJECTS-DIR-"])
 
         elif event == "-CANCEL-":
             sys.exit()
@@ -201,7 +238,7 @@ def format_nails(nails: list[Nail], global_options: GlobalOptions, update_global
 
 
 def main():
-    list_filename, templ_filename = initial_window()
+    list_filename, templ_filename, project_dir = initial_window()
     tmp_output_dir = create_tmp_output_dir("tmp_output")
     no_border_tmp_dir = create_tmp_output_dir("no_border_tmp_output")
     # TODO: configurable font_name. Dunno how it will work on windows
@@ -215,10 +252,14 @@ def main():
         idx=idx,
         text=name.strip(),
         formatted_text=[],
-        output_path=templ_filename,
         font_size=global_options.font_size,
         translation=global_options.translation,
     ) for idx, name in enumerate(names, start=1) if name]
+
+    if project_dir:
+        nails_cache, global_cache = read_cache(project_dir)
+        nails = [nail.apply_cache(nails_cache) for nail in nails]
+        global_options.load_cache(global_cache)
 
     format_nails(nails, global_options)
     main_window(nails, global_options)

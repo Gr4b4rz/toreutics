@@ -10,13 +10,29 @@ class Nail:
     idx: int
     text: str
     formatted_text: list[str]
-    output_path: str
     font_size: int
+    # TODO: maybe final center and spacing should also be there? Usefull in cache load
     translation: float
     spacing: Optional[int] = None
+    # TODO: mark them after reading the cache
+    from_cache: bool = False
 
     def bmp_filename(self, directory: str):
         return directory + "/" + str(self.idx) + "_" + "_".join(self.text.split()) + ".bmp"
+
+    def apply_cache(self, cache_list: list[dict]):
+        matching = [nail_cache for nail_cache in cache_list if nail_cache["text"] == self.text]
+        if len(matching) != 1:
+            return self
+        cache: dict = matching[0]
+
+        self.from_cache = True
+        self.formatted_text = cache["formatted_text"]
+        self.translation = cache["translation"]
+        self.font_size = cache["font_size"]
+        self.spacing = cache["spacing"]
+
+        return self
 
 
 class GlobalOptions:
@@ -58,6 +74,18 @@ class GlobalOptions:
         if nail_type == 3:
             return 70
         return 52
+
+    def get_cache(self) -> dict:
+        as_dict = vars(self)
+        cache = {k: v for k, v in as_dict.items() if k in {"center", "translation", "font_size",
+                                                           "spacing"}}
+        return cache
+
+    def load_cache(self, cache: dict):
+        self.center = cache["center"]
+        self.translation = cache["translation"]
+        self.font_size = cache["font_size"]
+        self.spacing = cache["spacing"]
 
 
 def fill_shield(nail: Nail, global_opts: GlobalOptions):
