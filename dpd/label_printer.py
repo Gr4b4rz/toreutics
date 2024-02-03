@@ -118,7 +118,7 @@ def main_window(dpd_creds: Credentials):
     table_data = [[BLANK_BOX, trans.name, trans.value, trans.client_symbol, trans.client_name,
                    trans.email, trans.tel, trans.address, trans.city, trans.zip_code]
                   for trans in transactions]
-    table_headings = [" ✔️ ", "Nazwa", "Cena brutto", "Symbol", "Klient",
+    table_headings = [" ✔️ ", "Nazwa", "Wartość brutto", "Symbol", "Klient",
                       "Email", "Tel", "Ulica", "Miasto", "Kod pocztowy"]
     selected = {i for i, row in enumerate(table_data[1:][:]) if row[0] == CHECKED_BOX}
     details = defaultdict(ShipmentDetails)
