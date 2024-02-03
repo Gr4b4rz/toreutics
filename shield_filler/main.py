@@ -47,7 +47,7 @@ def create_layout(names: list, global_opts: GlobalOptions):
                                          size=(5, 1), font='_ 13')]]),
                 sg.Column([[sg.VSeperator(pad=(0, 0))]]),
                 sg.Column([[sg.Text("Translacja (oś Y)", font='_ 13')]]),
-                sg.Column([[sg.InputText("0", key="-GLOBAL-TRANSLATION-",
+                sg.Column([[sg.InputText(str(global_opts.translation), key="-GLOBAL-TRANSLATION-",
                                          size=(5, 1), font='_ 13')]]),
             ],
             [sg.Text("Rozbity tekst:", font='_ 13')],
@@ -68,11 +68,8 @@ def create_layout(names: list, global_opts: GlobalOptions):
              sg.Column([[sg.VSeperator(pad=(0, 0))]]),
              sg.Column([[sg.Button("Zapisz i zakończ", key="-SAVE-CLOSE-", font='_ 13')]]),
              ]
-            # TODO: opcja wczytywania zformatowanych - ten as_is
-            # TODO: Zapis pliku ze sformatowanym tekstem - jakieś _formatted.txt czy coś
         ], expand_x=False),
             sg.VSeperator(pad=(0, 0)),
-            # TODO: we should have it rendered and start from first one here
             sg.Column([[sg.Image(data=get_img_data(global_opts.tmpl_filename,
                                                    first=True), key="-IMAGE-")]], expand_x=True)
         ]
