@@ -1,3 +1,4 @@
+import os
 import itertools
 from typing import Optional
 from dataclasses import dataclass
@@ -18,7 +19,11 @@ class Nail:
     from_cache: bool = False
 
     def bmp_filename(self, directory: str):
-        return directory + "/" + str(self.idx) + "_" + "_".join(self.text.split()) + ".bmp"
+        "Create window-sanitized filename"
+        part_from_text = "".join(char for char in self.text if char not in {
+                                 '"', ":", "*", "?", "<", ">", "|"})
+        return os.path.join(directory,
+                            (str(self.idx) + "_" + "_".join(part_from_text.split()) + ".bmp"))
 
     def apply_cache(self, cache_list: list[dict]):
         matching = [nail_cache for nail_cache in cache_list if nail_cache["text"] == self.text]
