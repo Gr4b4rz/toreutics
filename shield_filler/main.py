@@ -1,13 +1,14 @@
 #!/usr/bin/env python
+import json
 import sys
-from pathlib import Path
-import PySimpleGUI as sg
 import os
-from dataclasses import asdict
-from PIL import Image, ImageTk
 import io
 import shutil
-import json
+import subprocess
+from pathlib import Path
+from dataclasses import asdict
+import PySimpleGUI as sg
+from PIL import Image, ImageTk
 from src.shield_filler import fill_shield, GlobalOptions, Nail
 
 
@@ -144,10 +145,23 @@ def main_window(nails: list[Nail], global_opts: GlobalOptions):
             shutil.make_archive(os.path.join(final_dir, list_base_name + "_kontur"),
                                 'zip', global_opts.tmp_output_dir)
             shutil.rmtree(global_opts.no_border_tmp_dir)
+            open_folder(final_dir)
             sys.exit()
 
         else:
             pass
+
+
+def open_folder(dirname: str):
+    """
+    Open folder on a windows/mac/linux file browser
+    """
+    if sys.platform == 'win32':
+        subprocess.Popen(['start', os.path.abspath(dirname)], shell=True)
+    elif sys.platform == 'darwin':
+        subprocess.Popen(['open', os.path.abspath(dirname)])
+    else:
+        subprocess.Popen(['xdg-open', os.path.abspath(dirname)])
 
 
 def read_cache(directory: str) -> tuple[list[dict], dict]:
