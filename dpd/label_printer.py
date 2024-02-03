@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+from typing import Optional
 from collections import defaultdict
 import PySimpleGUI as sg
 from src.dpd import generate_labels, Shipment, ShipmentDetails, Credentials
@@ -122,7 +123,7 @@ def main_window(dpd_creds: Credentials):
     selected = {i for i, row in enumerate(table_data[1:][:]) if row[0] == CHECKED_BOX}
     details = defaultdict(ShipmentDetails)
     layout = create_layout(table_data, table_headings)
-    last_selected_row = None
+    last_selected_row: Optional[int] = None
 
     window = sg.Window('Listbox with Search', layout, icon="dpd.png", resizable=True, finalize=True)
 
@@ -156,8 +157,8 @@ def main_window(dpd_creds: Credentials):
                 selected.remove(row)
                 table_data[row][0] = BLANK_BOX
             else:  # Going from Unchecked to Checked
-                #  TODO: soft validate_transaction
-                if transactions[row].validate():
+                if transactions[row].validate() and (transactions[row].value or not
+                                                     details[row].cod):
                     selected.add(row)
                     table_data[row][0] = CHECKED_BOX
                 else:
@@ -191,7 +192,12 @@ def main_window(dpd_creds: Credentials):
             window['-RECEIVER NAME-'].update(value=details[row].receiver_second_name)
             last_selected_row = row
         elif event == "-COD-" and last_selected_row is not None:
-            details[last_selected_row].cod = values["-COD-"]
+            # Set COD only if transaction value is greater than 0
+            if transactions[last_selected_row].value:
+                details[last_selected_row].cod = values["-COD-"]
+            else:
+                window["-INFO2-"].update(value="Przesyłka pobraniowa musi mieć wartość!")
+                window['-COD-'].update(value=details[last_selected_row].cod)
         elif event == "-NEXTDAY-" and last_selected_row is not None:
             details[last_selected_row].next_day = values["-NEXTDAY-"]
         elif event == "-PRINT LABEL-":
