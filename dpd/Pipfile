@@ -10,6 +10,7 @@ pysimplegui = "*"
 pymupdf = "*"
 pyinstaller = "*"
 cryptography = "*"
+pypdf = "*"
 
 [dev-packages]
 
