@@ -13,7 +13,7 @@ Each input line is used to fill one of shield templates in a best possible way t
 ```
 pipenv shell
 pipenv install
-python3 shield_filler.py
+python3 main.py
 ```
 
 ### As a windows .exe

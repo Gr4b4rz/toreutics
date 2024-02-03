@@ -31,7 +31,7 @@ def create_layout(names: list, global_opts: GlobalOptions):
         [sg.Column([
             [sg.Text(global_opts.list_filename, font='_ 13')],
             [sg.Listbox(values=names, change_submits=True, size=(
-                63, 20), key='-LISTBOX-', font='_ 13')],
+                80, 20), key='-LISTBOX-', font='_ 13')],
             [
                 sg.Column([[sg.Text("Ustawienia globalne:", font='_ 13')]]),
                 sg.Column([[sg.VSeperator(pad=(0, 0))]]),
@@ -51,7 +51,7 @@ def create_layout(names: list, global_opts: GlobalOptions):
                                          size=(5, 1), font='_ 13')]]),
             ],
             [sg.Text("Rozbity tekst:", font='_ 13')],
-            [sg.Multiline(key="-FORMATTED-TEXT-", size=(63, 10), expand_y=True, font='_ 13')],
+            [sg.Multiline(key="-FORMATTED-TEXT-", size=(80, 10), expand_y=True, font='_ 13')],
             [sg.Column([[sg.Text("Rozmiar czcionki", font='_ 13')]]),
              sg.Column([[sg.InputText(str(global_opts.font_size), key="-FONT-SIZE-",
                                       size=(5, 1), font='_ 13')]]),
@@ -70,7 +70,7 @@ def create_layout(names: list, global_opts: GlobalOptions):
              ]
             # TODO: opcja wczytywania zformatowanych - ten as_is
             # TODO: Zapis pliku ze sformatowanym tekstem - jakieś _formatted.txt czy coś
-        ], expand_x=True),
+        ], expand_x=False),
             sg.VSeperator(pad=(0, 0)),
             # TODO: we should have it rendered and start from first one here
             sg.Column([[sg.Image(data=get_img_data(global_opts.tmpl_filename,
