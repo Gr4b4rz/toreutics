@@ -1,9 +1,10 @@
 import json
 import os
+import time
 from datetime import datetime
 from base64 import b64decode
 from enum import Enum
-from typing import Optional
+from typing import Optional, Self
 from dataclasses import asdict, dataclass
 import requests
 from cryptography.fernet import Fernet
@@ -30,6 +31,10 @@ class Credentials:
     fid: str
     # Business unit code. In practice, its DPD country code. 021 for Poland.
     bucode: str = "021"
+    # Token which is valid and should be cached for a one business day CET / CEST
+    token: Optional[str] = None
+    # Timestamp of token creation
+    token_timestamp: Optional[int] = None
 
     @property
     def login_url(self):
@@ -38,8 +43,8 @@ class Credentials:
 
     @property
     def label_url(self):
-        return ("https://api.dpdgroup.com/shipping/v1/shipment?LabelPrintFormat=PDF" if self.prod else
-                "https://api-preprod.dpsin.dpdgroup.com:8443/shipping/v1/shipment?"
+        return ("https://api.dpdgroup.com/shipping/v1/shipment?LabelPrintFormat=PDF" if self.prod
+                else "https://api-preprod.dpsin.dpdgroup.com:8443/shipping/v1/shipment?"
                 "LabelPrintFormat=PDF")
 
     def to_file(self, filename: str):
@@ -49,6 +54,11 @@ class Credentials:
         creds["password"] = Fernet(SECRET_KEY).encrypt(self.password.encode()).decode()
         creds["fid"] = Fernet(SECRET_KEY).encrypt(self.fid.encode()).decode()
         creds["bucode"] = Fernet(SECRET_KEY).encrypt(self.bucode.encode()).decode()
+        if self.token:
+            creds["token"] = Fernet(SECRET_KEY).encrypt(self.token.encode()).decode()
+        if self.token_timestamp:
+            creds["token_timestamp"] = Fernet(SECRET_KEY).encrypt(
+                str(self.token_timestamp).encode()).decode()
         with open(filename, 'w', encoding="utf-8") as f:
             json.dump(creds, f)
 
@@ -62,10 +72,27 @@ class Credentials:
             password = Fernet(SECRET_KEY).decrypt(data["password"].encode()).decode()
             fid = Fernet(SECRET_KEY).decrypt(data["fid"].encode()).decode()
             bucode = Fernet(SECRET_KEY).decrypt(data["bucode"].encode()).decode()
-            return Credentials(prod, login, password, fid, bucode)
+            token = (Fernet(SECRET_KEY).decrypt(data["token"].encode()).decode() if "token" in data
+                     else None)
+            token_timestamp = (int(Fernet(SECRET_KEY).decrypt(
+                data["token_timestamp"].encode()).decode()) if "token_timestamp" in data else None)
+            return Credentials(prod, login, password, fid, bucode, token, token_timestamp)
         # TODO: better exception
         except Exception:
             return Credentials(prod, "", "", "")
+
+    def has_valid_token(self) -> bool:
+        """
+        Check if there is a cached token which was created today
+        """
+        if not self.token or not self.token_timestamp:
+            return False
+        today = datetime.now().date()
+        return datetime.fromtimestamp(self.token_timestamp).date() == today
+
+    def __eq__(self, other: Self):
+        return (self.prod == other.prod and self.login == other.login and self.password ==
+                other.password and self.fid == other.fid and self.bucode == other.bucode)
 
 
 @dataclass
@@ -190,11 +217,14 @@ class Shipment:
                         price=trans.value)
 
 
-def generate_labels(shipments: list[dict], credentials: Credentials) -> tuple[bytes, str]:
+def _get_login_token(credentials: Credentials):
     """
-    Login to DPD API. Make a label creation request using login token.
-    Save generated label in PDF file. Return preview of one label and path to PDF file.
+    Try to get login token from cache. If it does not exist or its not valid try to get
+    it from DPD Api and cache it if it succeded.
     """
+    if credentials.has_valid_token():
+        return credentials.token
+
     login_body = {
         "X-DPD-LOGIN":   	credentials.login,
         "X-DPD-PASSWORD": 	credentials.password,
@@ -206,6 +236,21 @@ def generate_labels(shipments: list[dict], credentials: Credentials) -> tuple[by
         # TODO: Some custom exception
         raise Exception(ret.text)
     token = ret.headers['X-DPD-TOKEN']
+
+    # cache it in the Credentials and on the disk
+    credentials.token = token
+    credentials.token_timestamp = int(time.time())
+    credentials.to_file(os.path.abspath("secrets.json"))
+
+    return token
+
+
+def generate_labels(shipments: list[dict], credentials: Credentials) -> tuple[bytes, str]:
+    """
+    Login to DPD API. Make a label creation request using login token.
+    Save generated label in PDF file. Return preview of one label and path to PDF file.
+    """
+    token = _get_login_token(credentials)
     headers = {
         'Authorization': f'Bearer {token}',
     }

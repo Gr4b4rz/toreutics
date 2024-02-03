@@ -86,8 +86,11 @@ def dpd_login():
             # TODO: configurable prod/preprod toggle
             credentials = Credentials(True, values["-LOGIN-"], values["-PASSWORD-"],
                                       values["-FID-"], values["-BUCODE-"])
-            credentials.to_file(os.path.abspath("secrets.json"))
-            return credentials
+            if credentials != last_credentials:
+                credentials.to_file(os.path.abspath("secrets.json"))
+                return credentials
+            else:
+                return last_credentials
         elif event == "-CANCEL-":
             exit()
 
