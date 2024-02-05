@@ -81,7 +81,7 @@ def dpd_login():
     while True:
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Exit'):
-            exit()
+            sys.exit()
         elif event == "-OK-":
             window.close()
             # TODO: configurable prod/preprod toggle
@@ -93,7 +93,7 @@ def dpd_login():
             else:
                 return last_credentials
         elif event == "-CANCEL-":
-            exit()
+            sys.exit()
 
 
 def remove_ticks(table_data: list[list]):
