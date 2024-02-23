@@ -256,8 +256,12 @@ def main():
     font_name = "fonts/seagull.ttf"
     global_options = GlobalOptions(tmp_output_dir, no_border_tmp_dir, templ_filename, list_filename,
                                    font_name)
-    with open(list_filename, "r", encoding="utf-8") as file:
-        names = file.read().splitlines()
+    try:
+        with open(list_filename, "r", encoding="utf-8") as file:
+            names = file.read().splitlines()
+    except UnicodeDecodeError:
+        with open(list_filename, "r", encoding="cp1250") as file:
+            names = file.read().splitlines()
 
     nails = [Nail(
         idx=idx,
