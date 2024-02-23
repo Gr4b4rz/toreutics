@@ -105,12 +105,12 @@ def main_window(nails: list[Nail], global_opts: GlobalOptions):
             shutil.rmtree(global_opts.no_border_tmp_dir)
             shutil.rmtree(global_opts.tmp_output_dir)
             sys.exit()
-        elif event == "Down:116":
+        elif event.startswith("Down:"):
             row: int = window["-LISTBOX-"].get_indexes()[0]
             if row < len(nails) - 1:
                 window['-LISTBOX-'].update(set_to_index=row+1)
             update_view(window, nails, global_opts)
-        elif event == "Up:111":
+        elif event.startswith("Up:"):
             row: int = window["-LISTBOX-"].get_indexes()[0]
             if row > 0:
                 window['-LISTBOX-'].update(set_to_index=row-1)
