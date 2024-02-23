@@ -22,7 +22,7 @@ class Transaction:
     city: str
 
     def validate(self) -> bool:
-        return bool(self.name and self.value and self.client_name and self.email
+        return bool(self.name and self.client_name and self.email
                     and self.tel and self.address and self.zip_code and self.city)
 
 
