@@ -200,12 +200,14 @@ def initial_window() -> tuple:
     """
     Open login window. Load remembered credentials from secrets.json file.
     """
+    default_font = "fonts/seagull.ttf"
     layout = [
-        [[sg.Text("Lista", size=7), sg.Input(),
+        [[sg.Text("Lista", size=8), sg.Input(),
             sg.FileBrowse(key="-NAMES-FILE-", initial_folder=os.path.abspath("listy"))]],
-        [[sg.Text("Szablon", size=7), sg.Input(),
+        [[sg.Text("Szablon", size=8), sg.Input(),
             sg.FileBrowse(key="-TEMPLATE-FILE-", initial_folder=os.path.abspath("szablony"))]],
-        [[sg.Text("Projekt", size=7), sg.Input("Wybierz projekt, "
+        [[sg.Text("Czcionka", size=8), sg.Input(default_font), sg.FileBrowse(key="-FONT-FILE-")]],
+        [[sg.Text("Projekt", size=8), sg.Input("Wybierz projekt, "
                                                "jeśli chcesz kontynuować pracę"),
             sg.FolderBrowse(key="-PROJECTS-DIR-", initial_folder=os.path.abspath("projekty"),
                             tooltip="Wybierz folder, by kontynuować pracę")]],
@@ -222,7 +224,8 @@ def initial_window() -> tuple:
             sys.exit()
         elif event == "-OK-":
             window.close()
-            return (values["-NAMES-FILE-"], values["-TEMPLATE-FILE-"], values["-PROJECTS-DIR-"])
+            return (values["-NAMES-FILE-"], values["-TEMPLATE-FILE-"], values["-PROJECTS-DIR-"],
+                    values["-FONT-FILE-"] or default_font)
 
         elif event == "-CANCEL-":
             sys.exit()
@@ -249,11 +252,9 @@ def format_nails(nails: list[Nail], global_options: GlobalOptions, update_global
 
 
 def main():
-    list_filename, templ_filename, project_dir = initial_window()
+    list_filename, templ_filename, project_dir, font_name = initial_window()
     tmp_output_dir = create_tmp_output_dir("tmp_output")
     no_border_tmp_dir = create_tmp_output_dir("no_border_tmp_output")
-    # TODO: configurable font_name. Dunno how it will work on windows
-    font_name = "fonts/seagull.ttf"
     global_options = GlobalOptions(tmp_output_dir, no_border_tmp_dir, templ_filename, list_filename,
                                    font_name)
     try:
